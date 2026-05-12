@@ -1,0 +1,51 @@
+name: Login Test Pipeline (AI-Powered)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'qa-automation/tests/ui/test_login.py'
+      - 'qa-automation/pages/**'
+  workflow_dispatch:
+
+jobs:
+  run-login-tests:
+    name: Execute AI-Enhanced Login Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install Dependencies
+        run: |
+          cd qa-automation
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install py # Required for pytest-html table hooks
+          
+      - name: Install Playwright Browsers
+        run: |
+          cd qa-automation
+          npx playwright install --with-deps chromium
+          
+      - name: Run Login Tests with AI Self-Healing
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          LLM_PROVIDER: "google"
+        run: |
+          cd qa-automation
+          pytest tests/ui/test_login.py -v --html=reports/ai_login_report.html --self-contained-html
+          
+      - name: Upload AI Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-login-report
+          path: qa-automation/reports/ai_login_report.html

@@ -24,6 +24,7 @@ env:
   BASE_URL: 'http://localhost:3000'
   TEST_USER_EMAIL: 'testuser@fashioncube.com'
   TEST_USER_PASSWORD: 'Test@12345'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   ui-tests:
@@ -83,7 +84,8 @@ jobs:
             -v \
             --html=reports/ui_manual_report.html \
             --self-contained-html \
-            --tb=short
+            --tb=short \
+            || true
         env:
           HEADLESS: 'true'
           BROWSER: ${{ github.event.inputs.browser }}

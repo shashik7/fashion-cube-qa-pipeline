@@ -18,6 +18,7 @@ env:
   BASE_URL: 'http://localhost:3000'
   TEST_USER_EMAIL: 'testuser@fashioncube.com'
   TEST_USER_PASSWORD: 'Test@12345'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────

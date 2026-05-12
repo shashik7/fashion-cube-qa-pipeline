@@ -81,7 +81,7 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
                     print("[LangChain Healer] WARNING: GOOGLE_API_KEY not set.")
                     return None
                 return ChatGoogleGenerativeAI(
-                    model="gemini-2.0-flash",
+                    model="gemini-2.5-flash",
                     temperature=0,
                     google_api_key=api_key,
                 )

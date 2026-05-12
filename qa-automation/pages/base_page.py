@@ -35,11 +35,14 @@ class BasePage:
         """FC-001: Wait for an element with explicit wait."""
         timeout = timeout or self.timeout
         try:
-            if state == "hidden": # [AI-HEAL]
-                # Before waiting for an element to be hidden, ensure the page has settled. # [AI-HEAL]
-                # This helps with race conditions where the element might still be present # [AI-HEAL]
-                # while the page is navigating or loading new content after an action. # [AI-HEAL]
-                self.page.wait_for_load_state("domcontentloaded", timeout=timeout) # [AI-HEAL]
+            # Ensure the DOM is loaded before attempting to find or wait for any element. # [AI-HEAL]
+            self.page.wait_for_load_state("domcontentloaded", timeout=timeout) # [AI-HEAL]
+            # The following block for 'hidden' state is now redundant due to the general wait above.
+            # if state == "hidden": # [AI-HEAL]
+            #     # Before waiting for an element to be hidden, ensure the page has settled. # [AI-HEAL]
+            #     # This helps with race conditions where the element might still be present # [AI-HEAL]
+            #     # while the page is navigating or loading new content after an action. # [AI-HEAL]
+            #     self.page.wait_for_load_state("domcontentloaded", timeout=timeout) # [AI-HEAL]
             self.page.wait_for_selector(selector, state=state, timeout=timeout)
             return self.page.locator(selector)
         except Exception as e:
@@ -60,6 +63,7 @@ class BasePage:
 
     def wait_for_network_idle(self, timeout=None):
         """FC-001: Wait for network to be idle."""
+
 
 
 

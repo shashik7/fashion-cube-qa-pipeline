@@ -7,3 +7,9 @@ pytest-xdist==3.5.0
 requests==2.32.3
 jsonschema==4.22.0
 python-dotenv==1.0.1
+
+# LangChain Self-Healing Engine
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+langchain-google-genai>=2.0.0
+

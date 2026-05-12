@@ -108,26 +108,41 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_runtest_logreport(report):
-    """FC-001: Auto-analyze and self-heal failures with AIFailureAnalyzer.
+    """FC-001: Auto-analyze and self-heal failures.
 
-    Every test failure is analyzed AND auto-patched automatically.
+    Strategy:
+        1. Try LangChain healer (LLM-powered) if API key is configured.
+        2. Fall back to regex-based AIFailureAnalyzer if LLM is unavailable.
     All patches are tagged with [AI-HEAL] for easy review.
     """
     if report.when == "call" and report.failed:
+        log_text = report.longreprtext
+
+        # ── Attempt 1: LangChain LLM Healer ──
+        try:
+            from langchain_healer import LangChainHealer
+
+            healer = LangChainHealer()
+            if healer.llm is not None:
+                result = healer.heal(log_text)
+                if result.get("status") == "fixed":
+                    print(f"\n[AI-HEAL] LangChain: {result['message']}")
+                    return  # LLM fix applied, skip regex fallback
+                else:
+                    print(f"\n[AI-HEAL] LangChain: {result.get('message', 'No fix applied')}")
+        except Exception as e:
+            print(f"\n[AI-HEAL] LangChain unavailable ({e}), falling back to regex...")
+
+        # ── Attempt 2: Regex-Based Fallback ──
         try:
             from ai_failure_analyzer import AIFailureAnalyzer
 
             analyzer = AIFailureAnalyzer()
-            log_text = report.longreprtext
-
             result = analyzer.analyze(log_text)
             analyzer.print_analysis(result)
 
-            # Always self-heal
             heal_result = analyzer.self_heal(log_text)
-            print(f"\n[AI-HEAL] {heal_result.get('status', 'unknown')}: {heal_result.get('message', '')}")
+            print(f"\n[AI-HEAL] Regex: {heal_result.get('status', 'unknown')}: {heal_result.get('message', '')}")
         except Exception as e:
-            # Never let the analyzer crash the test runner
             print(f"\n[AI-HEAL] Analyzer error (non-blocking): {e}")
-
 

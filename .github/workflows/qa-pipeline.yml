@@ -151,7 +151,7 @@ jobs:
         run: |
           cd qa-automation
           sudo apt-get update
-          playwright install --with-deps chromium
+          playwright install chromium
 
       - name: Run UI Tests
         working-directory: qa-automation

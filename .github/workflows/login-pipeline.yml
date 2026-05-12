@@ -30,11 +30,11 @@ jobs:
           pip install -r requirements.txt
           pip install py # Required for pytest-html table hooks
           
-      - name: Install Playwright Browsers
+      - name: Install Playwright browsers + system deps
         run: |
           cd qa-automation
           sudo apt-get update
-          playwright install --with-deps chromium
+          playwright install chromium
           
       - name: Run Login Tests with AI Self-Healing
         env:

@@ -1,0 +1,99 @@
+# ============================================================================
+# FC-001 | Fashion Cube QA Automation - UI Tests Only (Manual Trigger)
+# ============================================================================
+
+name: FC-001 UI Tests (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to run tests on'
+        required: true
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  API_BASE_URL: 'http://localhost:3000'
+  BASE_URL: 'http://localhost:3000'
+  TEST_USER_EMAIL: 'testuser@fashioncube.com'
+  TEST_USER_PASSWORD: 'Test@12345'
+
+jobs:
+  ui-tests:
+    name: "🖥️ UI Test Execution"
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install & start backend
+        working-directory: server/ecommerce
+        run: |
+          npm install
+          node seed.js
+          node bin/www &
+          sleep 10
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install QA dependencies
+        working-directory: qa-automation
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install playwright
+
+      - name: Install Playwright browsers + system deps
+        run: |
+          playwright install ${{ github.event.inputs.browser }}
+          sudo apt-get update && sudo apt-get install -y chromium-browser fonts-liberation xdg-utils || true
+
+      - name: Run UI Tests
+        working-directory: qa-automation
+        run: |
+          pytest tests/ui/ \
+            -m ui \
+            -v \
+            --html=reports/ui_manual_report.html \
+            --self-contained-html \
+            --tb=short
+        env:
+          HEADLESS: 'true'
+          BROWSER: ${{ github.event.inputs.browser }}
+
+      - name: Upload UI Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fc-001-ui-manual-report
+          path: |
+            qa-automation/reports/ui_manual_report.html
+            qa-automation/reports/*.png
+          retention-days: 7

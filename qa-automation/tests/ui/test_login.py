@@ -12,7 +12,6 @@ from config.config import (
     TEST_USER_PASSWORD,
     JIRA_ID,
 )
-
 @pytest.mark.ui
 @pytest.mark.smoke
 class TestLogin:

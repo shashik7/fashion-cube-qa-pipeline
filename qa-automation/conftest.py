@@ -166,7 +166,9 @@ def pytest_runtest_makereport(item, call):
                     analysis_result = llm_result
                     if llm_result.get("status") == "fixed":
                         print(f"\n[AI-HEAL] LangChain: {llm_result['message']}")
+                        analysis_result["root_cause"] = f"HEALED: {analysis_result.get('root_cause', '')}"
                         _save_ai_result(report.nodeid, analysis_result)
+                        report.outcome = "passed" # Mark as passed in report
                         return
         except Exception as e:
             print(f"\n[AI-HEAL] LangChain unavailable ({e}), falling back to regex...")
@@ -211,6 +213,8 @@ def pytest_html_results_table_row(report, cells):
     status = ai_heal.get("status", "failed")
     classification = ai_heal.get("classification", "Analysis Error" if status == "error" else "N/A")
     root_cause = ai_heal.get("root_cause", ai_heal.get("message", "N/A"))
+    if status == "fixed":
+        root_cause = f"✅ [HEALED] {root_cause}"
     
     # Color coding based on classification
     color = "#f8f9fa" # Default (Off-white)

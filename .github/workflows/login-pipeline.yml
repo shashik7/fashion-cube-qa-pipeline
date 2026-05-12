@@ -40,6 +40,7 @@ jobs:
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           LLM_PROVIDER: "google"
+          BASE_URL: "https://quintuslabs.github.io/fashion-cube"
         run: |
           cd qa-automation
           pytest tests/ui/test_login.py -v --html=reports/ai_login_report.html --self-contained-html

@@ -117,7 +117,9 @@ def _save_ai_result(nodeid, result):
         except:
             pass
     
-    data[nodeid] = result
+    if nodeid not in data:
+        data[nodeid] = []
+    data[nodeid].append(result)
     
     if not os.path.exists(REPORTS_DIR):
         os.makedirs(REPORTS_DIR)
@@ -132,10 +134,10 @@ def _get_ai_result(nodeid):
         try:
             with open(AI_DATA_FILE, "r") as f:
                 data = json.load(f)
-                return data.get(nodeid, {})
+                return data.get(nodeid, [])
         except:
             pass
-    return {}
+    return []
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -208,42 +210,67 @@ def pytest_html_results_table_row(report, cells):
     from py.xml import html
     
     # Retrieve from file storage (to support xdist)
-    ai_heal = _get_ai_result(report.nodeid)
+    ai_heals = _get_ai_result(report.nodeid)
+    if isinstance(ai_heals, dict):
+        ai_heals = [ai_heals]
+    if not ai_heals:
+        ai_heals = [{}]
+
+    # We determine color based on the LAST action taken
+    last_heal = ai_heals[-1]
+    status = last_heal.get("status", "failed")
+    last_class = last_heal.get("classification", "Analysis Error" if status == "error" else "N/A")
     
-    status = ai_heal.get("status", "failed")
-    classification = ai_heal.get("classification", "Analysis Error" if status == "error" else "N/A")
-    root_cause = ai_heal.get("root_cause", ai_heal.get("message", "N/A"))
-    if status == "fixed":
-        root_cause = f"✅ [HEALED] {root_cause}"
+    # Build content: if multiple, use numbering
+    if len(ai_heals) > 1:
+        classifications_html = []
+        root_causes_html = []
+        for i, heal in enumerate(ai_heals, 1):
+            cls_text = heal.get("classification", "N/A")
+            rc_text = heal.get("root_cause", heal.get("message", "N/A"))
+            if heal.get("status") == "fixed":
+                rc_text = f"✅ [HEALED] {rc_text}"
+            
+            classifications_html.append(html.div(f"{i}. {cls_text}", style="margin-bottom: 4px;"))
+            root_causes_html.append(html.div(f"{i}. {rc_text}", style="margin-bottom: 4px;"))
+            
+        classification_content = html.div(classifications_html)
+        root_cause_content = html.div(root_causes_html)
+    else:
+        classification_content = last_class
+        rc_text = last_heal.get("root_cause", last_heal.get("message", "N/A"))
+        if status == "fixed":
+            rc_text = f"✅ [HEALED] {rc_text}"
+        root_cause_content = rc_text
     
-    # Color coding based on classification
+    # Color coding based on classification of the most recent issue
     color = "#f8f9fa" # Default (Off-white)
     text_color = "#212529"
     
-    if "Timing" in classification:
+    if "Timing" in last_class:
         color = "#fff3cd" # Yellow
         text_color = "#856404"
-    elif "Selector" in classification or "Locator" in classification:
+    elif "Selector" in last_class or "Locator" in last_class:
         color = "#f8d7da" # Red
         text_color = "#721c24"
-    elif "Data" in classification:
+    elif "Data" in last_class:
         color = "#d1ecf1" # Blue
         text_color = "#0c5460"
-    elif "API" in classification:
+    elif "API" in last_class:
         color = "#e2e3e5" # Grey
         text_color = "#383d41"
-    elif "Logic" in classification:
+    elif "Logic" in last_class:
         color = "#fdfdfe" # White/Soft Blue
         text_color = "#1b1e21"
-    elif "Performance" in classification:
+    elif "Performance" in last_class:
         color = "#cce5ff" # Light Blue
         text_color = "#004085"
-    elif "Success" in classification or status == "fixed":
+    elif "Success" in last_class or status == "fixed":
         color = "#d4edda" # Green
         text_color = "#155724"
 
-    cells.insert(2, html.td(classification, style=f"background-color: {color}; color: {text_color}; font-weight: bold; border: 1px solid #dee2e6;"))
-    cells.insert(3, html.td(root_cause, style=f"background-color: {color}; color: {text_color}; border: 1px solid #dee2e6;"))
+    cells.insert(2, html.td(classification_content, style=f"background-color: {color}; color: {text_color}; font-weight: bold; border: 1px solid #dee2e6; vertical-align: top;"))
+    cells.insert(3, html.td(root_cause_content, style=f"background-color: {color}; color: {text_color}; border: 1px solid #dee2e6; vertical-align: top;"))
     if len(cells) > 5:
         cells.pop() # Remove the Links cell
 
@@ -286,8 +313,14 @@ def pytest_html_results_summary(prefix, summary, postfix):
             analyzed_tests = []
             for nodeid, data in all_results.items():
                 test_name = nodeid.split("::")[-1]
-                data["test_name"] = test_name
-                analyzed_tests.append(data)
+                if isinstance(data, list):
+                    for heal in data:
+                        heal_copy = heal.copy()
+                        heal_copy["test_name"] = test_name
+                        analyzed_tests.append(heal_copy)
+                else:
+                    data["test_name"] = test_name
+                    analyzed_tests.append(data)
             
             if analyzed_tests:
                 summary_table = html.div([

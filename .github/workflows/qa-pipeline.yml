@@ -147,7 +147,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Install Playwright browsers + system deps
-        run: playwright install --with-deps chromium
+        run: |
+          pip install playwright
+          playwright install chromium
+          sudo apt-get update && sudo apt-get install -y chromium-browser fonts-liberation xdg-utils || true
 
       - name: Run UI Tests
         working-directory: qa-automation

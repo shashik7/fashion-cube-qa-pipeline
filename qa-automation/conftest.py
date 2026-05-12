@@ -283,29 +283,33 @@ def pytest_html_results_summary(prefix, summary, postfix):
             with open(cache_file, "r") as f:
                 all_results = json.load(f)
             
-            fixed_tests = []
+            analyzed_tests = []
             for nodeid, data in all_results.items():
-                if data.get("status") == "fixed":
-                    test_name = nodeid.split("::")[-1]
-                    data["test_name"] = test_name
-                    fixed_tests.append(data)
+                test_name = nodeid.split("::")[-1]
+                data["test_name"] = test_name
+                analyzed_tests.append(data)
             
-            if fixed_tests:
+            if analyzed_tests:
                 summary_table = html.div([
-                    html.h2("🛠️ AI Self-Healing Summary", style="color: #155724; background-color: #d4edda; padding: 10px; border-radius: 5px;"),
-                    html.p(f"The AI engine successfully resolved {len(fixed_tests)} failures in this run:"),
+                    html.h2("🛠️ AI Analysis & Self-Healing Summary", style="color: #0c5460; background-color: #d1ecf1; padding: 10px; border-radius: 5px;"),
+                    html.p(f"The AI engine analyzed {len(analyzed_tests)} issues in this run:"),
                     html.table([
                         html.thead(html.tr([
+                            html.th("Status", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;"),
                             html.th("Test Case", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;"),
-                            html.th("Type", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;"),
-                            html.th("Fix Applied", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;")
+                            html.th("Classification", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;"),
+                            html.th("Root Cause / Action Taken", style="border: 1px solid #dee2e6; padding: 8px; background-color: #f8f9fa;")
                         ])),
                         html.tbody([
                             html.tr([
+                                html.td(
+                                    "✅ FIXED" if test.get("status") == "fixed" else "❌ FAILED", 
+                                    style=f"border: 1px solid #dee2e6; padding: 8px; font-weight: bold; color: {'#155724' if test.get('status') == 'fixed' else '#721c24'};"
+                                ),
                                 html.td(test.get("test_name", "N/A"), style="border: 1px solid #dee2e6; padding: 8px;"),
                                 html.td(test.get("classification", "N/A"), style="border: 1px solid #dee2e6; padding: 8px; font-weight: bold;"),
-                                html.td(test.get("explanation", "N/A"), style="border: 1px solid #dee2e6; padding: 8px;")
-                            ]) for test in fixed_tests
+                                html.td(test.get("explanation", test.get("root_cause", "N/A")), style="border: 1px solid #dee2e6; padding: 8px;")
+                            ]) for test in analyzed_tests
                         ])
                     ], style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 30px;")
                 ], id="ai-healing-summary")

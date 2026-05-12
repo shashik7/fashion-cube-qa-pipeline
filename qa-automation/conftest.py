@@ -116,9 +116,12 @@ def _save_ai_result(nodeid, result):
                 data = json.load(f)
         except:
             pass
-    
     if nodeid not in data:
         data[nodeid] = []
+    elif not isinstance(data[nodeid], list):
+        # Convert legacy dict format to list
+        data[nodeid] = [data[nodeid]]
+        
     data[nodeid].append(result)
     
     if not os.path.exists(REPORTS_DIR):

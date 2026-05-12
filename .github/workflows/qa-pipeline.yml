@@ -150,6 +150,7 @@ jobs:
       - name: Install Playwright browsers + system deps
         run: |
           cd qa-automation
+          sudo apt-get update
           playwright install --with-deps chromium
 
       - name: Run UI Tests

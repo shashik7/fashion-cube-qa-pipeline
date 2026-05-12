@@ -1,0 +1,201 @@
+# ============================================================================
+# FC-001 | Fashion Cube QA Automation - GitHub Actions CI/CD Pipeline
+# Requirement: Automated test execution with reporting and artifact uploads
+# ============================================================================
+
+name: FC-001 QA Automation Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'qa-automation/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'qa-automation/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PYTHON_VERSION: '3.11'
+  BASE_URL: ${{ vars.BASE_URL || 'http://localhost:3000/fashion-cube' }}
+  API_BASE_URL: ${{ vars.API_BASE_URL || 'http://localhost:3000' }}
+  TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'testuser@fashioncube.com' }}
+  TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'Test@12345' }}
+
+jobs:
+  # ---- Job 1: UI Tests ----
+  ui-tests:
+    name: FC-001 UI Tests (Playwright)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qa-automation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run UI Tests
+        run: |
+          pytest tests/ui/ \
+            -m ui \
+            -v \
+            --html=reports/ui_test_report.html \
+            --self-contained-html \
+            --tb=short \
+            --junitxml=reports/ui_test_results.xml \
+            || true
+        env:
+          HEADLESS: 'true'
+          BROWSER: 'chromium'
+
+      - name: Upload UI Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fc-001-ui-test-reports
+          path: |
+            qa-automation/reports/ui_test_report.html
+            qa-automation/reports/ui_test_results.xml
+            qa-automation/reports/*.png
+          retention-days: 30
+
+  # ---- Job 2: API Tests ----
+  api-tests:
+    name: FC-001 API Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: qa-automation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run API Tests
+        run: |
+          pytest tests/api/ \
+            -m api \
+            -v \
+            --html=reports/api_test_report.html \
+            --self-contained-html \
+            --tb=short \
+            --junitxml=reports/api_test_results.xml \
+            || true
+
+      - name: Upload API Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fc-001-api-test-reports
+          path: |
+            qa-automation/reports/api_test_report.html
+            qa-automation/reports/api_test_results.xml
+          retention-days: 30
+
+  # ---- Job 3: Performance Tests (k6) ----
+  performance-tests:
+    name: FC-001 Performance Tests (k6)
+    runs-on: ubuntu-latest
+    needs: [api-tests]
+    defaults:
+      run:
+        working-directory: qa-automation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D68
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6 -y
+
+      - name: Run k6 Performance Tests
+        run: |
+          k6 run performance/ecommerce_load.js \
+            --out json=reports/k6_results.json \
+            --summary-export=reports/k6_summary.json \
+            || true
+        env:
+          API_BASE_URL: ${{ env.API_BASE_URL }}
+          TEST_USER_EMAIL: ${{ env.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ env.TEST_USER_PASSWORD }}
+
+      - name: Upload Performance Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fc-001-performance-reports
+          path: |
+            qa-automation/reports/k6_results.json
+            qa-automation/reports/k6_summary.json
+          retention-days: 30
+
+  # ---- Job 4: Results Summary ----
+  test-results:
+    name: FC-001 Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [ui-tests, api-tests, performance-tests]
+    if: always()
+
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+
+      - name: Check test results
+        run: |
+          echo "========================================="
+          echo "FC-001 QA Pipeline - Test Results Summary"
+          echo "========================================="
+          echo ""
+          echo "UI Tests:          ${{ needs.ui-tests.result }}"
+          echo "API Tests:         ${{ needs.api-tests.result }}"
+          echo "Performance Tests: ${{ needs.performance-tests.result }}"
+          echo ""
+          if [ "${{ needs.ui-tests.result }}" == "failure" ] || \
+             [ "${{ needs.api-tests.result }}" == "failure" ]; then
+            echo "❌ PIPELINE FAILED: One or more test suites failed."
+            exit 1
+          else
+            echo "✅ PIPELINE PASSED: All test suites completed."
+          fi

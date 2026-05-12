@@ -1,0 +1,9 @@
+# FC-001 | Fashion Cube QA Automation - Python Dependencies
+playwright==1.44.0
+pytest==8.2.2
+pytest-playwright==0.5.0
+pytest-html==4.1.1
+pytest-xdist==3.5.0
+requests==2.32.3
+jsonschema==4.22.0
+python-dotenv==1.0.1

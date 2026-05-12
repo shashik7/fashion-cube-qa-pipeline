@@ -1,0 +1,37 @@
+# Node / Backend
+node_modules/
+npm-debug.log*
+.env
+
+# Python / QA
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Reports & Screenshots (generated at runtime)
+qa-automation/reports/*.html
+qa-automation/reports/*.xml
+qa-automation/reports/*.json
+qa-automation/reports/*.png
+
+# MongoDB data
+/data/
+
+# Logs
+*.log
+C:/data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user

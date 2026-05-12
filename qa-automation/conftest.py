@@ -105,3 +105,29 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
     setattr(item, f"rep_{rep.when}", rep)
+
+
+def pytest_runtest_logreport(report):
+    """FC-001: Auto-analyze and self-heal failures with AIFailureAnalyzer.
+
+    Every test failure is analyzed AND auto-patched automatically.
+    All patches are tagged with [AI-HEAL] for easy review.
+    """
+    if report.when == "call" and report.failed:
+        try:
+            from ai_failure_analyzer import AIFailureAnalyzer
+
+            analyzer = AIFailureAnalyzer()
+            log_text = report.longreprtext
+
+            result = analyzer.analyze(log_text)
+            analyzer.print_analysis(result)
+
+            # Always self-heal
+            heal_result = analyzer.self_heal(log_text)
+            print(f"\n[AI-HEAL] {heal_result.get('status', 'unknown')}: {heal_result.get('message', '')}")
+        except Exception as e:
+            # Never let the analyzer crash the test runner
+            print(f"\n[AI-HEAL] Analyzer error (non-blocking): {e}")
+
+

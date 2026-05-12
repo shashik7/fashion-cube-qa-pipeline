@@ -118,7 +118,7 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
         file_path, line_num = location
 
         # Step 2: Read the source code around the failure
-        source_context, start_line = self._read_source_context(file_path, line_num)
+        source_context, start_line, end_line = self._read_source_context(file_path, line_num)
         if not source_context:
             return {
                 "status": "error",
@@ -144,14 +144,19 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
             # Step 4: Parse the LLM response
             fix_data = self._parse_response(raw_response)
             if not fix_data:
+                print(f"   [DEBUG] Raw LLM response: {raw_response[:500]}")
                 return {
                     "status": "error",
                     "message": "LLM response could not be parsed as JSON.",
                     "raw_response": raw_response[:500],
                 }
 
+            print(f"   Classification: {fix_data.get('classification', 'N/A')}")
+            print(f"   Root Cause: {fix_data.get('root_cause', 'N/A')}")
+            print(f"   Explanation: {fix_data.get('explanation', 'N/A')}")
+
             # Step 5: Apply the fix
-            apply_result = self._apply_fix(file_path, start_line, source_context, fix_data["fixed_code"])
+            apply_result = self._apply_fix(file_path, start_line, end_line, fix_data["fixed_code"])
 
             result = {
                 "status": "fixed" if apply_result else "error",
@@ -190,21 +195,26 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
         """FC-001: Read source code around the failure point."""
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
+                all_lines = f.readlines()
 
             start = max(0, line_num - self.CONTEXT_LINES - 1)
-            end = min(len(lines), line_num + self.CONTEXT_LINES)
+            end = min(len(all_lines), line_num + self.CONTEXT_LINES)
+
+            # For small files, send the entire file
+            if len(all_lines) <= self.CONTEXT_LINES * 2:
+                start = 0
+                end = len(all_lines)
 
             # Add line numbers for LLM context
             numbered_lines = []
             for i in range(start, end):
-                marker = " >>> FAILURE" if i == line_num - 1 else ""
-                numbered_lines.append(f"{i + 1:>4}: {lines[i].rstrip()}{marker}")
+                marker = "  # <<< FAILURE LINE" if i == line_num - 1 else ""
+                numbered_lines.append(f"{i + 1}: {all_lines[i].rstrip()}{marker}")
 
-            return "\n".join(numbered_lines), start
+            return "\n".join(numbered_lines), start, end
 
         except Exception:
-            return None, 0
+            return None, 0, 0
 
     def _build_prompt(self, log_text, source_context, file_path, line_num):
         """FC-001: Build the user prompt for the LLM."""
@@ -248,7 +258,7 @@ Analyze the failure and provide the fixed code. Remember to respond with ONLY a 
 
         return None
 
-    def _apply_fix(self, file_path, start_line, original_context, fixed_code):
+    def _apply_fix(self, file_path, start_line, end_line, fixed_code):
         """FC-001: Apply the LLM-generated fix to the source file."""
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -257,24 +267,26 @@ Analyze the failure and provide the fixed code. Remember to respond with ONLY a 
             # Strip line numbers from the fixed code (LLM might include them)
             clean_lines = []
             for line in fixed_code.split("\n"):
-                # Remove line number prefix like "  42: "
-                cleaned = re.sub(r"^\s*\d+:\s?", "", line)
+                # Remove line number prefix like "1: " or "  42: "
+                cleaned = re.sub(r"^\s*\d+:\s", "", line)
                 clean_lines.append(cleaned + "\n")
 
-            # Remove the marker comments the LLM might echo back
-            clean_lines = [line.replace(" >>> FAILURE", "") for line in clean_lines]
+            # Remove the failure marker comments the LLM might echo back
+            clean_lines = [line.replace("  # <<< FAILURE LINE", "") for line in clean_lines]
 
-            # Calculate the range to replace
-            orig_lines = original_context.split("\n")
-            end_line = start_line + len(orig_lines)
+            # Remove trailing empty line if present
+            while clean_lines and clean_lines[-1].strip() == "":
+                clean_lines.pop()
+            clean_lines.append("\n")  # Ensure file ends with newline
 
-            # Replace the lines
+            # Replace the lines in the original range
             lines[start_line:end_line] = clean_lines
 
             # Write back
             with open(file_path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
 
+            print(f"   [APPLIED] Replaced lines {start_line+1}-{end_line} with {len(clean_lines)} fixed lines")
             return True
 
         except Exception as e:

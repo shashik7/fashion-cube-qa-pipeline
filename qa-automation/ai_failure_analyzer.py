@@ -101,6 +101,8 @@ class AIFailureAnalyzer:
         },
         "data_problem": {
             "patterns": [
+                r"NameError",
+                r"SyntaxError",
                 r"KeyError",
                 r"IndexError",
                 r"NoneType.*attribute",

@@ -223,12 +223,21 @@ def pytest_html_results_table_row(report, cells):
     if "Timing" in classification:
         color = "#fff3cd" # Yellow
         text_color = "#856404"
-    elif "Selector" in classification:
+    elif "Selector" in classification or "Locator" in classification:
         color = "#f8d7da" # Red
         text_color = "#721c24"
     elif "Data" in classification:
         color = "#d1ecf1" # Blue
         text_color = "#0c5460"
+    elif "API" in classification:
+        color = "#e2e3e5" # Grey
+        text_color = "#383d41"
+    elif "Logic" in classification:
+        color = "#fdfdfe" # White/Soft Blue
+        text_color = "#1b1e21"
+    elif "Performance" in classification:
+        color = "#cce5ff" # Light Blue
+        text_color = "#004085"
     elif "Success" in classification or status == "fixed":
         color = "#d4edda" # Green
         text_color = "#155724"

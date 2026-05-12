@@ -18,12 +18,19 @@ class BasePage:
     # ---- Navigation ----
 
     def navigate(self, url):
-        """FC-001: Navigate to a URL with error handling."""
-        try:
-            self.page.goto(url, wait_until="domcontentloaded")
-        except Exception as e:
-            self.take_screenshot("navigation_error")
-            raise AssertionError(f"FC-001: Failed to navigate to {url}: {e}")
+        """FC-001: Navigate to a URL with error handling and retry mechanism."""
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.page.goto(url, wait_until="domcontentloaded")
+                return
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    self.take_screenshot("navigation_error")
+                    raise AssertionError(f"FC-001: Failed to navigate to {url} after {max_retries} attempts: {e}")
+                print(f"Navigation attempt {attempt + 1} failed, retrying in 2s... ({e})")
+                time.sleep(2)
     
     def reload(self):
         """FC-001: Reload the current page."""

@@ -13,7 +13,6 @@ from config.config import (
     JIRA_ID,
 )
 
-
 @pytest.mark.ui
 @pytest.mark.smoke
 class TestLogin:
@@ -28,7 +27,7 @@ class TestLogin:
         page.on("console", lambda msg: print(f"[BROWSER CONSOLE] {msg.type}: {msg.text}"))
         login_page = LoginPage(page)
         login_page.navigate()
-        login_page.login(TEST_USER_EMAI, TEST_USER_PASSWORD)
+        login_page.login(TEST_USER_EMAIL, TEST_USER_PASSWORD)  # [AI-HEAL]
 
         # Wait for page reload after successful login
         login_page.wait_for_network_idle()
@@ -38,5 +37,4 @@ class TestLogin:
         assert not login_page.is_login_form_displayed(), (
             f"{JIRA_ID}_TC001: Login modal should close after successful login"
         )
-
 

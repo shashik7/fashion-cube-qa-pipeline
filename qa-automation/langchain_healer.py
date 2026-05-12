@@ -147,7 +147,13 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
                 HumanMessage(content=user_prompt),
             ]
             response = self.llm.invoke(messages)
-            raw_response = response.content.strip()
+            # FC-001: Robust handling of response content (some models return a list of parts)
+            content = response.content
+            if isinstance(content, list):
+                # Join text parts if it's a list
+                raw_response = "".join([part.get("text", str(part)) if isinstance(part, dict) else str(part) for part in content]).strip()
+            else:
+                raw_response = str(content).strip()
 
             # Step 4: Parse the LLM response
             fix_data = self._parse_response(raw_response)

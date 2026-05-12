@@ -24,7 +24,7 @@ class BasePage:
         except Exception as e:
             self.take_screenshot("navigation_error")
             raise AssertionError(f"FC-001: Failed to navigate to {url}: {e}")
-
+    
     def reload(self):
         """FC-001: Reload the current page."""
         self.page.reload(wait_until="domcontentloaded")
@@ -35,6 +35,11 @@ class BasePage:
         """FC-001: Wait for an element with explicit wait."""
         timeout = timeout or self.timeout
         try:
+            if state == "hidden": # [AI-HEAL]
+                # Before waiting for an element to be hidden, ensure the page has settled. # [AI-HEAL]
+                # This helps with race conditions where the element might still be present # [AI-HEAL]
+                # while the page is navigating or loading new content after an action. # [AI-HEAL]
+                self.page.wait_for_load_state("domcontentloaded", timeout=timeout) # [AI-HEAL]
             self.page.wait_for_selector(selector, state=state, timeout=timeout)
             return self.page.locator(selector)
         except Exception as e:
@@ -55,6 +60,11 @@ class BasePage:
 
     def wait_for_network_idle(self, timeout=None):
         """FC-001: Wait for network to be idle."""
+
+
+
+
+
         timeout = timeout or self.timeout
         try:
             self.page.wait_for_load_state("networkidle", timeout=timeout)

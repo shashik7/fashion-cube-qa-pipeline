@@ -21,7 +21,7 @@ JIRA_SUMMARY = (
 # ---------------------------------------------------------------------------
 # Environment URLs
 # ---------------------------------------------------------------------------
-BASE_URL = os.getenv("BASE_URL", "http://localhost:3000/fashion-cube")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:3001/fashion-cube")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:3000")
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ TEST_USER_FULLNAME = os.getenv("TEST_USER_FULLNAME", "Test User")
 # ---------------------------------------------------------------------------
 BROWSER = os.getenv("BROWSER", "chromium")  # chromium, firefox, webkit
 HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
-SLOW_MO = int(os.getenv("SLOW_MO", "0"))
+SLOW_MO = int(os.getenv("SLOW_MO", "1000"))
 VIEWPORT_WIDTH = int(os.getenv("VIEWPORT_WIDTH", "1280"))
 VIEWPORT_HEIGHT = int(os.getenv("VIEWPORT_HEIGHT", "720"))
 

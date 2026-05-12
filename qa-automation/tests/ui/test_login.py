@@ -26,6 +26,7 @@ class TestLogin:
         """FC-001_TC001: Verify user can login with valid credentials.
         Requirement: AC-02 – JWT token returned, page reloads with auth state.
         """
+        page.on("console", lambda msg: print(f"[BROWSER CONSOLE] {msg.type}: {msg.text}"))
         login_page = LoginPage(page)
         login_page.navigate()
         login_page.login(TEST_USER_EMAIL, TEST_USER_PASSWORD)
@@ -34,6 +35,7 @@ class TestLogin:
         login_page.wait_for_network_idle()
 
         # After successful login the login modal should close
+        login_page.wait_for_element(login_page.LOCATOR_LOGIN_FORM, state="hidden")
         assert not login_page.is_login_form_displayed(), (
             f"{JIRA_ID}_TC001: Login modal should close after successful login"
         )
@@ -50,6 +52,7 @@ class TestLogin:
         login_page.open_login_modal()
         login_page.enter_email("not-an-email")
         login_page.enter_password(TEST_USER_PASSWORD)
+
         login_page.click_login_button()
 
         # Validation should prevent login; form should remain visible

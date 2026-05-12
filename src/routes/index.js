@@ -42,7 +42,7 @@ class Routes extends Component {
 
     return (
       <div>
-        <Router ref={registerNav}>
+        <Router ref={registerNav} basename="/fashion-cube">
           <Switch>
             {HomeRoutes.map((homeRoute, index) => {
               return (

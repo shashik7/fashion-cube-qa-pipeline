@@ -7,10 +7,18 @@
 import os
 import re
 import json
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# FC-001: Ensure UTF-8 output for Windows consoles to avoid character mapping errors
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, Exception):
+        pass
 
 
 class LangChainHealer:
@@ -126,10 +134,10 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
             }
 
         # Step 3: Build the prompt and call the LLM
-        user_prompt = self._build_prompt(log_text, source_context, file_path, line_num)
+        user_prompt = self._build_prompt(log_text, source_context, file_path, line_num, start_line, end_line)
 
-        print(f"\n🤖 [LangChain Healer] Sending failure to {self.provider} LLM...")
-        print(f"   📄 File: {file_path}:{line_num}")
+        print(f"\n[AI-HEAL] Sending failure to {self.provider} LLM...")
+        print(f"   File: {file_path}:{line_num}")
 
         try:
             from langchain_core.messages import SystemMessage, HumanMessage
@@ -178,14 +186,26 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
 
     def _extract_location(self, log_text):
         """FC-001: Extract file path and line number from Python traceback."""
-        pattern = r'File "(.*?)", line (\d+)'
-        matches = re.findall(pattern, log_text)
+        # Standard Traceback: File "...", line \d+
+        std_pattern = r'File "(.*?)", line (\d+)'
+        # Pytest short: path\to\file.py:line: in function
+        short_pattern = r'([\w\\/.]+\.py):(\d+): in'
+        
+        matches = re.findall(std_pattern, log_text)
+        short_matches = re.findall(short_pattern, log_text)
+        
+        # Combine and prioritize
+        all_matches = []
+        for m in matches:
+            all_matches.append((m[0], int(m[1])))
+        for m in short_matches:
+            all_matches.append((m[0], int(m[1])))
 
-        if not matches:
+        if not all_matches:
             return None
 
         # Prefer project files over library code
-        for path, line in reversed(matches):
+        for path, line in reversed(all_matches):
             if "qa-automation" in path or "tests" in path or "pages" in path:
                 return path, int(line)
 
@@ -216,7 +236,7 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
         except Exception:
             return None, 0, 0
 
-    def _build_prompt(self, log_text, source_context, file_path, line_num):
+    def _build_prompt(self, log_text, source_context, file_path, line_num, start_line, end_line):
         """FC-001: Build the user prompt for the LLM."""
         return f"""\
 ## Test Failure Log
@@ -229,7 +249,13 @@ Do NOT include any text outside the JSON object. No markdown fences, no commenta
 {source_context}
 ```
 
-Analyze the failure and provide the fixed code. Remember to respond with ONLY a JSON object.
+Analyze the failure and provide the fixed code. 
+
+**IMPORTANT**: 
+1. Your response must be a valid JSON object.
+2. The `fixed_code` field MUST contain the FULL code block for the entire context window provided above (all lines from {start_line+1} to {end_line}), including both the fixed lines and the unchanged surrounding lines. 
+3. Do not include line numbers in the `fixed_code`.
+4. Ensure correct indentation as it will be directly injected into the file.
 """
 
     def _parse_response(self, raw_response):
@@ -296,7 +322,7 @@ Analyze the failure and provide the fixed code. Remember to respond with ONLY a 
     def _print_result(self, result):
         """FC-001: Pretty-print the healing result."""
         print(f"\n{'='*60}")
-        print(f"🤖  LANGCHAIN SELF-HEAL RESULT")
+        print(f"  AI SELF-HEAL RESULT")
         print(f"{'='*60}")
         print(f"Status:         {result['status']}")
         print(f"Classification: {result.get('classification', 'N/A')}")

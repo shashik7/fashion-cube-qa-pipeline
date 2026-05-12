@@ -15,7 +15,7 @@ import CartContainer from "../views/Cart/CartContainer";
 
 var PrivateRoutes = [
   {
-    path: "/fashion-cube/cart",
+    path: "/cart",
     layout: BaseLayout,
     component: CartContainer,
   },

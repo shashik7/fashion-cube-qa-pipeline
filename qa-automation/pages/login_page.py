@@ -12,16 +12,17 @@ class LoginPage(BasePage):
     """FC-001: Page Object for the Login Modal/Form."""
 
     # ---- Locators (stable strategy: ID > CSS class > text) ----
-    LOCATOR_USER_ICON = ".navbar_user li:nth-child(2) a"
+    LOCATOR_ACCOUNT_MENU = ".account > a"
+    LOCATOR_SIGN_IN_LINK = "text=Sign In"
     LOCATOR_EMAIL_INPUT = "#UserName"
-    LOCATOR_PASSWORD_INPUT = "#Passwod"
-    LOCATOR_LOGIN_BUTTON = ".login-form .log-btn"
-    LOCATOR_LOGIN_FORM = ".login-form"
-    LOCATOR_LOGIN_HEADING = ".login-form h2"
+    LOCATOR_PASSWORD_INPUT = "#Passwod"  # Note: Original code has 'Passwod' typo
+    LOCATOR_LOGIN_BUTTON = ".log-btn"
+    LOCATOR_LOGIN_FORM = "#loginModal"
+    LOCATOR_LOGIN_HEADING = "#loginModal h2"
     LOCATOR_REGISTER_LINK = "text=New user ? Please Register"
     LOCATOR_FORGOT_PASSWORD_LINK = "text=Lost your password?"
-    LOCATOR_ERROR_ALERT = ".login-form .alert"
-    LOCATOR_LOADING_SPINNER = ".login-form .log-btn .spinner-border"
+    LOCATOR_ERROR_ALERT = ".alert-danger"
+    LOCATOR_LOADING_SPINNER = ".spinner-border"
 
     def __init__(self, page):
         super().__init__(page)
@@ -32,8 +33,12 @@ class LoginPage(BasePage):
         super().navigate(self.url)
 
     def open_login_modal(self):
-        """FC-001: Open the login modal by clicking the user icon."""
-        self.click(self.LOCATOR_USER_ICON)
+        """FC-001: Open the login modal via TopNavBar account menu."""
+        # Ensure the page is loaded
+        self.wait_for_element(self.LOCATOR_ACCOUNT_MENU)
+        # The menu might need a hover or just direct click on the Sign In link
+        self.page.locator(self.LOCATOR_ACCOUNT_MENU).hover()
+        self.click(self.LOCATOR_SIGN_IN_LINK)
         self.wait_for_element(self.LOCATOR_LOGIN_FORM)
 
     def enter_email(self, email):

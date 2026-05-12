@@ -9,6 +9,13 @@ import json
 import sys
 from datetime import datetime
 
+# FC-001: Ensure UTF-8 output for Windows consoles to avoid character mapping errors
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, Exception):
+        pass
+
 
 class AIFailureAnalyzer:
     """FC-001: AI-powered test failure root cause analyzer.
@@ -281,8 +288,9 @@ class AIFailureAnalyzer:
 
     def print_analysis(self, result):
         """FC-001: Pretty-print a single analysis result."""
+        icon = result.get('icon', '[!]')
         print(f"\n{'='*60}")
-        print(f"{result['icon']}  FAILURE ANALYSIS – {result['jira_id']}")
+        print(f"{icon}  FAILURE ANALYSIS – {result['jira_id']}")
         print(f"{'='*60}")
         print(f"Classification: {result['classification']}")
         print(f"\n📋 Root Cause:")

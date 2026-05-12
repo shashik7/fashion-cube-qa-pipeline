@@ -33,7 +33,7 @@ jobs:
       - name: Install Playwright Browsers
         run: |
           cd qa-automation
-          npx playwright install --with-deps chromium
+          playwright install --with-deps chromium
           
       - name: Run Login Tests with AI Self-Healing
         env:

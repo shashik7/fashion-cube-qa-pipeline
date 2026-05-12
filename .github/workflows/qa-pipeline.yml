@@ -149,9 +149,8 @@ jobs:
 
       - name: Install Playwright browsers + system deps
         run: |
-          pip install playwright
-          playwright install chromium
-          sudo apt-get update && sudo apt-get install -y chromium-browser fonts-liberation xdg-utils || true
+          cd qa-automation
+          playwright install --with-deps chromium
 
       - name: Run UI Tests
         working-directory: qa-automation

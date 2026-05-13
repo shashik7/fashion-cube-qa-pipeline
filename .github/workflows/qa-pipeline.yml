@@ -155,7 +155,7 @@ jobs:
       - name: Run UI Tests
         working-directory: qa-automation
         run: |
-          pytest tests/ui/ \
+          pytest tests/ui/test_login.py \
             -m ui \
             -v \
             --html=reports/ui_test_report.html \

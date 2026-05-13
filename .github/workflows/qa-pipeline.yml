@@ -106,7 +106,6 @@ jobs:
   ui-tests:
     name: "FC-001 🖥️ UI Tests (Playwright)"
     runs-on: ubuntu-latest
-    needs: api-tests
 
     services:
       mongodb:
@@ -185,7 +184,6 @@ jobs:
   performance-tests:
     name: "FC-001 ⚡ Performance Tests (k6)"
     runs-on: ubuntu-latest
-    needs: api-tests
 
     services:
       mongodb:

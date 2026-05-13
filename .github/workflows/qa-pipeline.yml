@@ -222,7 +222,7 @@ jobs:
         working-directory: qa-automation
         run: |
           k6 run performance/ecommerce_load.js \
-            --out json=reports/k6_results.json \
+            --out csv=reports/k6_results.csv \
             --summary-export=reports/k6_summary.json \
             || true
         env:
@@ -236,7 +236,7 @@ jobs:
         with:
           name: fc-001-performance-reports
           path: |
-            qa-automation/reports/k6_results.json
+            qa-automation/reports/k6_results.csv
             qa-automation/reports/k6_summary.json
           retention-days: 30
 

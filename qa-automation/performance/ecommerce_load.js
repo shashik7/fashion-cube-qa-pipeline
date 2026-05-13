@@ -226,7 +226,15 @@ export default function () {
 
 // ---- Summary Handler ----
 export function handleSummary(data) {
+    let csv = 'Metric,Avg,Min,Med,Max,P(90),P(95)\n';
+    for (const key in data.metrics) {
+        if (data.metrics[key].type === 'trend') {
+            const m = data.metrics[key].values;
+            csv += `${key},${m.avg.toFixed(2)},${m.min.toFixed(2)},${m.med.toFixed(2)},${m.max.toFixed(2)},${m['p(90)'].toFixed(2)},${m['p(95)'].toFixed(2)}\n`;
+        }
+    }
     return {
         'reports/k6_summary.json': JSON.stringify(data, null, 2),
+        'reports/k6_summary.csv': csv,
     };
 }

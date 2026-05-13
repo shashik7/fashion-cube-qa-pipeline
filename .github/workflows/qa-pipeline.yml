@@ -236,6 +236,7 @@ jobs:
           path: |
             qa-automation/reports/k6_results.csv
             qa-automation/reports/k6_summary.json
+            qa-automation/reports/k6_summary.csv
           retention-days: 30
 
   # ─────────────────────────────────────────────
